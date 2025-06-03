@@ -48,3 +48,21 @@ def get_attendance_data(file_path):
     """仅获取考勤数据（精简字段）"""
     _, attendance_data = process_pc_attendance(file_path)
     return attendance_data
+
+
+def fill_pc_attendance(index_map, pc_df):
+    """
+    将PC考勤数据写入模板
+    :param index_map: (工号, 日期) -> record 的索引
+    :param pc_df: 原始PC考勤DataFrame
+    :return: None（直接修改记录）
+    """
+    for _, row in pc_df.iterrows():
+        # 转换为字符串
+        emp_id= str(row["工号"]).strip().zfill(8)
+        date = pd.to_datetime(row["考勤日期"]).date()
+        status = row["出勤状态"]
+
+        key = (emp_id, date)
+        if key in index_map:
+            index_map[key]["pc出勤状态"] = status 

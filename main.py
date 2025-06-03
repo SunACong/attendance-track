@@ -2,8 +2,10 @@ import pandas as pd
 import os
 from datetime import timedelta
 from tabulate import tabulate
-from processPCKQ import process_pc_attendance, get_date_range, get_attendance_data
-from processTXL import get_contact_list
+from processPCKQ import process_pc_attendance, fill_pc_attendance
+from processYDKQ import fill_oa_attendance
+from processQJDJ import fill_leave_info
+from processLGDJ import fill_leave_registration
 
 
 def read_excel_file(file_path, sheet_name=0, usecols=None):
@@ -79,101 +81,10 @@ def build_record_index(template_records):
     }
 
 
-def fill_pc_attendance(index_map, pc_df):
-    """
-    将PC考勤数据写入模板
-    :param index_map: (工号, 日期) -> record 的索引
-    :param pc_df: 原始PC考勤DataFrame
-    :return: None（直接修改记录）
-    """
-    for _, row in pc_df.iterrows():
-        # 转换为字符串
-        emp_id= str(row["工号"]).strip().zfill(8)
-        date = pd.to_datetime(row["考勤日期"]).date()
-        status = row["出勤状态"]
-
-        key = (emp_id, date)
-        if key in index_map:
-            index_map[key]["pc出勤状态"] = status
-
-def fill_oa_attendance(index_map, oa_df):
-    """
-    根据 OA 打卡数据填充 oa出勤状态 和 是否打卡
-    :param index_map: (工号, 日期) -> record 的索引
-    :param oa_df: 原始OA打卡记录（DataFrame）
-    """
-    # 转换时间字段
-    oa_df["打卡时间"] = pd.to_datetime(oa_df["打卡时间"])
-
-    # 添加新列：日期、小时
-    oa_df["打卡日期"] = oa_df["打卡时间"].dt.date
-    oa_df["打卡小时"] = oa_df["打卡时间"].dt.hour
-    oa_df["打卡分钟"] = oa_df["打卡时间"].dt.minute
-
-    # 分组处理：按工号 + 打卡日期聚合 工号转换为字符串
-    oa_df["工号"] = oa_df["工号"].astype(str).str.zfill(8)
-    grouped = oa_df.groupby(["工号", "打卡日期"])
-
-    for (emp_id, date), group in grouped:
-        has_morning = any(t < 8 for t in group["打卡小时"])
-        has_evening = any(t > 18 or (t == 18 and m > 0) for t, m in zip(group["打卡小时"], group["打卡分钟"]))
-
-        key = (emp_id, date)
-        if key in index_map:
-            record = index_map[key]
-            record["oa出勤状态"] = "正常出勤" if has_morning and has_evening else "异常"
-            record["oa是否打卡"] = True
-
-def fill_leave_registration(index_map, leave_df):
-    leave_df.columns = leave_df.columns.str.strip()
-    leave_df["离岗日期"] = pd.to_datetime(leave_df["离岗日期"])
-    leave_df["返岗日期"] = pd.to_datetime(leave_df["返岗日期"])
-    leave_df["工号"] = leave_df["工号"].astype(str).str.strip()
-
-    for _, row in leave_df.iterrows():
-        emp_id = str(row["工号"]).strip().zfill(8)
-        start_date = row["离岗日期"].date()
-        end_date = row["返岗日期"].date()
-
-        current_date = start_date
-        while current_date <= end_date:
-            key = (emp_id, current_date)
-
-            if key in index_map:
-                index_map[key]["oa离岗登记"] = True
-            else:
-                print(f"❗未找到 key: {key}，请确认 index_map 中是否存在")
-            current_date += timedelta(days=1)
-
-def fill_leave_info(index_map, leave_df):
-    """
-    根据请假数据更新 index_map 中的 oa请假信息（为 True）
-    :param index_map: (工号, 日期) -> record
-    :param leave_df: 请假 DataFrame
-    """
-    # 统一解析日期字段（支持 5/23/25 这种格式）
-    leave_df["请假开始日期"] = pd.to_datetime(leave_df["请假开始日期"], errors="coerce")
-    leave_df["请假结束日期"] = pd.to_datetime(leave_df["请假结束日期"], errors="coerce")
-
-    for _, row in leave_df.iterrows():
-        emp_id = str(row["工号"]).strip().zfill(8)
-        start_date = row["请假开始日期"].date()
-        end_date = row["请假结束日期"].date()
-
-        current_date = start_date
-        while current_date <= end_date:
-            key = (emp_id, current_date)
-            if key in index_map:
-                record = index_map[key]
-                record["oa请假信息"] = True  # ✅ 标记为 True
-            current_date += timedelta(days=1)
-
-
 def summarize_attendance(contact_attendance_list, holiday_set):
     summary_map = {}
 
     for record in contact_attendance_list:
-        print(holiday_set)
 
         # ✅ 如果是节假日，跳过这一天
         if record["考勤日期"] in holiday_set:
@@ -223,21 +134,17 @@ def summarize_attendance(contact_attendance_list, holiday_set):
 if __name__ == "__main__":
     holiday_set = set()
     try:
-        person_data = read_excel_file("cs/01_通信录.xlsx", usecols=['姓名', '工号','所在部门'])
-        oa_data = pd.read_excel("cs/02_移动OA_考勤_cs.xlsx", engine="openpyxl")
-        leave_df = pd.read_excel("cs/03_移动OA_离岗登记表_cs.xlsx", engine="openpyxl")
-        qj_df = pd.read_excel("cs/04_移动OA_请假信息统计_cs.xlsx", engine="openpyxl")
-        holiday_df = pd.read_excel("cs/05_节假日表.xlsx")
+        person_data = read_excel_file("zs/01_通信录.xlsx", usecols=['姓名', '工号','所在部门'])
+        oa_data = pd.read_excel("zs/02_移动OA_考勤_cs.xlsx", engine="openpyxl")
+        leave_df = pd.read_excel("zs/03_移动OA_离岗登记表_cs.xlsx", engine="openpyxl")
+        qj_df = pd.read_excel("zs/04_移动OA_请假信息统计_cs.xlsx", engine="openpyxl")
+        holiday_df = pd.read_excel("zs/05_节假日表.xlsx")
         holiday_set = set(pd.to_datetime(holiday_df["日期"]).dt.date)
-        print(holiday_set)
     except Exception as e:
         print(e)
     
-    # 调用processPCKQ.py中的函数
-    pc_attendance_path = "cs/00_PC_考勤结果_cs.xlsx"
-    txl_attendance_path = "cs/01_通信录.xlsx"
-    
-    # 方法1：获取日期范围和考勤数据
+    # PC考勤数据需要获取考勤日期范围和考勤数据
+    pc_attendance_path = "zs/00_PC_考勤结果_cs.xlsx"
     date_range, attendance_data = process_pc_attendance(pc_attendance_path) 
 
     # 初始化考勤数组
@@ -252,15 +159,23 @@ if __name__ == "__main__":
     # 移动OA
     fill_oa_attendance(index_map, oa_data)
 
+    # 移动OA_离岗登记表
     fill_leave_registration(index_map, leave_df)
 
+    # 移动OA_请假信息统计
     fill_leave_info(index_map, qj_df)
     
+    # 汇总统计
     summary_result = summarize_attendance(contact_attendance_list, holiday_set)
+
     df_summary = pd.DataFrame(summary_result)
-    
     output_path = "考勤统计结果.xlsx"
     df_summary.to_excel(output_path, index=False)
+
+    
+    df_all = pd.DataFrame(contact_attendance_list)
+    output_path1 = "总览.xlsx"
+    df_all.to_excel(output_path1, index=False)
 
     print(f"✅ 成功导出到：{output_path}")
 
