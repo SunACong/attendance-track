@@ -16,8 +16,8 @@ def fill_oa_attendance(index_map, oa_df):
     oa_df["打卡分钟"] = oa_df["打卡时间"].dt.minute
 
     # 分组处理：按工号 + 打卡日期聚合 工号转换为字符串
-    oa_df["工号"] = oa_df["工号"].astype(str).str.zfill(8)
-    grouped = oa_df.groupby(["工号", "打卡日期"])
+    oa_df["编号"] = oa_df["编号"].astype(str).str.zfill(8)
+    grouped = oa_df.groupby(["编号", "打卡日期"])
 
     for (emp_id, date), group in grouped:
         has_morning = any(t < 8 for t in group["打卡小时"])
