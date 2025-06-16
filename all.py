@@ -31,7 +31,8 @@ def init_attendance_template(df, start_date, end_date):
                 "pc出勤状态": "",
                 "oa出勤状态": "",
                 "oa离岗登记": "",
-                "oa请假信息": ""
+                "oa请假信息": "",
+                "oa请假类型":"",
             })
     return template_records
 
@@ -64,6 +65,7 @@ def summarize_attendance(contact_attendance_list, holiday_set):
         pc_status = record.get("pc出勤状态")
         oa_status = record.get("oa出勤状态")
         oa_leave = record.get("oa请假信息")
+        oa_leave_type = record.get("oa请假类型")
         oa_absence = record.get("oa离岗登记")
         oa_clock = record.get("oa是否打卡")
 
@@ -77,6 +79,17 @@ def summarize_attendance(contact_attendance_list, holiday_set):
                 "缺勤天数": 0,
                 "请假天数": 0,
                 "旷工天数": 0,
+                "病假":0,
+                "事假":0,
+                "年休假":0,
+                "婚丧假":0,
+                "探亲假":0,
+                "产假":0,
+                "陪产假":0,
+                "育儿假":0,
+                "出差":0,
+                "其他":0,
+                "备注":"",
             }
 
         stat = summary_map[emp_id]
@@ -90,6 +103,24 @@ def summarize_attendance(contact_attendance_list, holiday_set):
             stat["旷工天数"] += 1
         elif has_oa_leave:
             stat["请假天数"] += 1
+            if oa_leave_type == "病假":
+                stat["病假"] += 1
+            elif oa_leave_type == "事假":
+                stat["事假"] += 1
+            elif oa_leave_type == "年休假":
+                stat["年休假"] += 1
+            elif oa_leave_type == "婚丧假":
+                stat["婚丧假"] += 1
+            elif oa_leave_type == "探亲假":
+                stat["探亲假"] += 1
+            elif oa_leave_type == "产假":
+                stat["产假"] += 1
+            elif oa_leave_type == "陪产假":
+                stat["陪产假"] += 1
+            elif oa_leave_type == "育儿假":
+                stat["育儿假"] += 1
+            elif oa_leave_type == "请假类型未知":
+                stat["备注"] += "请假类型未知"
         elif is_pc_normal or is_oa_normal:
             stat["正常出勤天数"] += 1
         else:
