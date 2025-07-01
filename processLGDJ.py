@@ -24,6 +24,6 @@ def fill_leave_registration(index_map, leave_df):
 
             if key in index_map:
                 index_map[key]["oa离岗登记"] = True
-            else:
-                print(f"❗离岗登记表: {row},未找到 key: {key}，请确认 index_map 中是否存在")
+            # else:
+                # print(f"❗离岗登记表: {row},未找到 key: {key}，请确认 index_map 中是否存在")
             current_date += timedelta(days=1)

@@ -26,6 +26,6 @@ def fill_leave_info(index_map, leave_df):
                 record = index_map[key]
                 record["oa请假信息"] = True  # ✅ 标记为 True
                 record["oa请假类型"] = row["请假类型"]
-            else:
-                print(f"❗请假登记表: {row},未找到 key: {key}，请确认 index_map 中是否存在") 
+            # else:
+                # print(f"❗请假登记表: {row},未找到 key: {key}，请确认 index_map 中是否存在") 
             current_date += timedelta(days=1)

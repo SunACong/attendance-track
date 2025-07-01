@@ -66,5 +66,5 @@ def fill_pc_attendance(index_map, pc_df):
         key = (emp_id, date)
         if key in index_map:
             index_map[key]["pc出勤状态"] = status
-        else:
-            print(f"❗PC考勤表: {row},未找到 key: {key}，请确认 index_map 中是否存在") 
+        # else:
+            # print(f"❗PC考勤表: {row},未找到 key: {key}，请确认 index_map 中是否存在") 

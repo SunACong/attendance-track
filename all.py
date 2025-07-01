@@ -33,6 +33,9 @@ def init_attendance_template(df, start_date, end_date):
                 "oa离岗登记": "",
                 "oa请假信息": "",
                 "oa请假类型":"",
+                "oa出差信息": "",
+                "oa出差地点": "",
+                "倒班出勤": "", 
             })
     return template_records
 
@@ -48,13 +51,11 @@ def build_record_index(template_records):
         for record in template_records
     }
 
-
 def summarize_attendance(contact_attendance_list, holiday_set):
+
     summary_map = {}
-
     for record in contact_attendance_list:
-
-        # ✅ 如果是节假日，跳过这一天
+        
         if record["考勤日期"] in holiday_set:
             continue
 
@@ -68,28 +69,28 @@ def summarize_attendance(contact_attendance_list, holiday_set):
         oa_leave_type = record.get("oa请假类型")
         oa_absence = record.get("oa离岗登记")
         oa_clock = record.get("oa是否打卡")
+        oa_trip = record.get("oa出差信息")
+        shift_attended = record.get("倒班出勤")
 
-        # 初始化统计结构
         if emp_id not in summary_map:
             summary_map[emp_id] = {
                 "姓名": name,
                 "工号": emp_id,
                 "部门": dept,
                 "正常出勤天数": 0,
+                "出差": 0,
                 "缺勤天数": 0,
-                "请假天数": 0,
                 "旷工天数": 0,
-                "病假":0,
-                "事假":0,
-                "年休假":0,
-                "婚丧假":0,
-                "探亲假":0,
-                "产假":0,
-                "陪产假":0,
-                "育儿假":0,
-                "出差":0,
-                "其他":0,
-                "备注":"",
+                "病假": 0,
+                "事假": 0,
+                "年休假": 0,
+                "婚丧假": 0,
+                "探亲假": 0,
+                "产假": 0,
+                "陪产假": 0,
+                "育儿假": 0,
+                "其他": 0,
+                "备注": "",
             }
 
         stat = summary_map[emp_id]
@@ -98,33 +99,36 @@ def summarize_attendance(contact_attendance_list, holiday_set):
         is_pc_normal = oa_absence is True or pc_status == "正常出勤"
         is_oa_normal = oa_status == "正常出勤"
         has_oa_leave = oa_leave is True
-
+        has_oa_trip = oa_trip is True
+        is_shift_normal = shift_attended is True  # ✅ 倒班出勤判断
+        
         if is_all_empty:
             stat["旷工天数"] += 1
+        elif has_oa_trip:
+            stat["出差"] += 1
         elif has_oa_leave:
-            stat["请假天数"] += 1
-            if oa_leave_type == "病假":
+            if "病假" in oa_leave_type:
                 stat["病假"] += 1
-            elif oa_leave_type == "事假":
+            elif "事假" in oa_leave_type:
                 stat["事假"] += 1
-            elif oa_leave_type == "年休假":
+            elif "年休假" in oa_leave_type:
                 stat["年休假"] += 1
-            elif oa_leave_type == "婚丧假":
+            elif "婚丧假" in oa_leave_type:
                 stat["婚丧假"] += 1
-            elif oa_leave_type == "探亲假":
+            elif "探亲假" in oa_leave_type:
                 stat["探亲假"] += 1
-            elif oa_leave_type == "产假":
+            elif "产假" in oa_leave_type:
                 stat["产假"] += 1
-            elif oa_leave_type == "陪产假":
+            elif "陪产假" in oa_leave_type:
                 stat["陪产假"] += 1
-            elif oa_leave_type == "育儿假":
+            elif "育儿假" in oa_leave_type:
                 stat["育儿假"] += 1
-            elif oa_leave_type == "请假类型未知":
-                stat["备注"] += "请假类型未知"
-        elif is_pc_normal or is_oa_normal:
+            else:
+                stat["其他"] += 1
+                stat["备注"] += f"{oa_leave_type} "
+        elif is_pc_normal or is_oa_normal or is_shift_normal:  # ✅ 合并判断
             stat["正常出勤天数"] += 1
         else:
             stat["缺勤天数"] += 1
 
-    # 返回聚合后的列表（可用于生成表格/导出）
     return list(summary_map.values())

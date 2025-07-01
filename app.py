@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pandas as pd
 from io import BytesIO
@@ -7,6 +6,8 @@ from processPCKQ import process_pc_attendance, fill_pc_attendance
 from processYDKQ import fill_oa_attendance
 from processQJDJ import fill_leave_info
 from processLGDJ import fill_leave_registration
+from processCCKQ import fill_business_trip
+from processShift import fill_shift_attendance  # ✅ 倒班处理逻辑
 from all import init_attendance_template, build_record_index, summarize_attendance
 
 st.set_page_config(page_title="考勤分析工具", layout="wide")
@@ -20,19 +21,23 @@ with st.expander("📂 上传所需文件（点击展开）", expanded=True):
     with col1:
         uploaded_files["person"] = st.file_uploader("🧑‍💼 通信录", type=["xlsx"], key="p1")
         uploaded_files["oa"] = st.file_uploader("🏢 OA打卡", type=["xlsx"], key="p2")
+        uploaded_files["trip"] = st.file_uploader("🧳 出差记录", type=["xlsx"], key="p7")
 
     with col2:
         uploaded_files["pc"] = st.file_uploader("💻 PC考勤", type=["xlsx"], key="p3")
         uploaded_files["leave"] = st.file_uploader("📝 离岗登记", type=["xlsx"], key="p4")
+        uploaded_files["shift"] = st.file_uploader("🕐 倒班记录", type=["xlsx"], key="p8")  # ✅ 新增上传倒班记录
 
     with col3:
         uploaded_files["qj"] = st.file_uploader("📅 请假记录", type=["xlsx"], key="p5")
         uploaded_files["holiday"] = st.file_uploader("🎉 节假日", type=["xlsx"], key="p6")
+        uploaded_files["record"] = st.file_uploader("🕐 打卡记录", type=["xlsx"], key="p9")
 
 # 分析按钮
 if st.button("🚀 开始分析"):
 
-    if not all(uploaded_files.values()):
+    required_keys = ["person", "oa", "pc", "leave", "qj", "holiday", "trip", "shift", "record"]
+    if not all(uploaded_files.get(k) for k in required_keys):
         st.error("❌ 请确保上传了所有文件。")
     else:
         with st.spinner("🕐 正在分析考勤数据，请稍候..."):
@@ -43,23 +48,29 @@ if st.button("🚀 开始分析"):
             qj_df = pd.read_excel(uploaded_files["qj"])
             holiday_df = pd.read_excel(uploaded_files["holiday"])
             holiday_set = set(pd.to_datetime(holiday_df["日期"]).dt.date)
+            trip_df = pd.read_excel(uploaded_files["trip"])
+            shift_df = pd.read_excel(uploaded_files["shift"])  # ✅ 读取倒班表
+            record_df = pd.read_excel(uploaded_files["record"])  # ✅ 借用 OA 打卡数据作为实际打卡记录参考
 
-            # 处理考勤
+            # 处理考勤模板
             date_range, attendance_data = process_pc_attendance(uploaded_files["pc"])
             contact_attendance_list = init_attendance_template(person_df, date_range[0], date_range[1])
             index_map = build_record_index(contact_attendance_list)
 
+            # 填充各类考勤记录
             fill_pc_attendance(index_map, attendance_data)
             fill_oa_attendance(index_map, oa_df)
             fill_leave_registration(index_map, leave_df)
             fill_leave_info(index_map, qj_df)
+            fill_business_trip(index_map, trip_df)
+            fill_shift_attendance(index_map, shift_df, record_df)  # ✅ 填充倒班出勤字段
 
-            # 汇总
+            # 汇总统计
             summary_result = summarize_attendance(contact_attendance_list, holiday_set)
             df_summary = pd.DataFrame(summary_result)
             df_all = pd.DataFrame(contact_attendance_list)
 
-            # 缓存下载内容
+            # 下载缓存
             buffer1 = BytesIO()
             df_summary.to_excel(buffer1, index=False)
             st.session_state["summary_bytes"] = buffer1.getvalue()
@@ -70,8 +81,7 @@ if st.button("🚀 开始分析"):
 
             st.session_state["analysis_done"] = True
 
-
-# 下载区域：分析完成后显示
+# 下载区域
 if st.session_state.get("analysis_done"):
     st.success("✅ 分析完成，请选择下载内容：")
 
