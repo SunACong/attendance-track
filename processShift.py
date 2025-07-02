@@ -49,4 +49,3 @@ def fill_shift_attendance(index_map, shift_df, record_df):
 
         if is_attended and key in index_map:
             index_map[key]["倒班出勤"] = True
-

@@ -12,7 +12,11 @@ def fill_business_trip(index_map, trip_df):
     trip_df["出差结束日期"] = pd.to_datetime(trip_df["出差结束日期"], errors="coerce")
 
     for _, row in trip_df.iterrows():
-        emp_id = str(row["人员编号"]).strip().zfill(8)
+        # emp_id被错误识别为数字后带了.0后缀
+        try:
+            emp_id = str(int(row["人员编号"])).strip().zfill(8)
+        except (ValueError, TypeError):
+            emp_id = str(row["人员编号"]).strip().zfill(8)
         location = row.get("出差地点", "未知地点")
 
         # ✅ 校验开始与结束日期
@@ -31,6 +35,7 @@ def fill_business_trip(index_map, trip_df):
         current_date = start_date
         while current_date <= end_date:
             key = (emp_id, current_date)
+            print(key)
             if key in index_map:
                 record = index_map[key]
                 record["oa出差信息"] = True

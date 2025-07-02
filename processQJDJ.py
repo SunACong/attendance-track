@@ -16,8 +16,8 @@ def fill_leave_info(index_map, leave_df):
         start_date = row["请假开始日期"].date()
         end_date = row["请假结束日期"].date()
         # 判断请假类型字段是否为空
-        if pd.isna(row["请假类型"]):
-            row["请假类型"] = "请假类型未知"
+        if pd.isna(row["请假类型新"]):
+            row["请假类型新"] = "请假类型未知"
 
         current_date = start_date
         while current_date <= end_date:
@@ -25,7 +25,7 @@ def fill_leave_info(index_map, leave_df):
             if key in index_map:
                 record = index_map[key]
                 record["oa请假信息"] = True  # ✅ 标记为 True
-                record["oa请假类型"] = row["请假类型"]
+                record["oa请假类型"] = row["请假类型新"]
             # else:
                 # print(f"❗请假登记表: {row},未找到 key: {key}，请确认 index_map 中是否存在") 
             current_date += timedelta(days=1)

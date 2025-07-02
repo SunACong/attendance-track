@@ -1,6 +1,8 @@
 import pandas as pd
 
 def init_attendance_template(df, start_date, end_date):
+
+    print(start_date, end_date)
     """
     初始化考勤模板列表（每人每天一条记录）
     :param df: 含姓名、工号、所在部门的DataFrame
@@ -79,13 +81,16 @@ def summarize_attendance(contact_attendance_list, holiday_set):
                 "部门": dept,
                 "正常出勤天数": 0,
                 "出差": 0,
-                "缺勤天数": 0,
+                "迟到": 0,
+                "早退": 0,
+                "缺勤": 0,
                 "旷工天数": 0,
                 "病假": 0,
                 "事假": 0,
                 "年休假": 0,
                 "婚丧假": 0,
                 "探亲假": 0,
+                "护理假": 0,
                 "产假": 0,
                 "陪产假": 0,
                 "育儿假": 0,
@@ -113,7 +118,7 @@ def summarize_attendance(contact_attendance_list, holiday_set):
                 stat["事假"] += 1
             elif "年休假" in oa_leave_type:
                 stat["年休假"] += 1
-            elif "婚丧假" in oa_leave_type:
+            elif "婚" in oa_leave_type or "丧" in oa_leave_type:
                 stat["婚丧假"] += 1
             elif "探亲假" in oa_leave_type:
                 stat["探亲假"] += 1
@@ -121,6 +126,8 @@ def summarize_attendance(contact_attendance_list, holiday_set):
                 stat["产假"] += 1
             elif "陪产假" in oa_leave_type:
                 stat["陪产假"] += 1
+            elif "护理假" in oa_leave_type:
+                stat["护理假"] += 1
             elif "育儿假" in oa_leave_type:
                 stat["育儿假"] += 1
             else:
@@ -129,6 +136,11 @@ def summarize_attendance(contact_attendance_list, holiday_set):
         elif is_pc_normal or is_oa_normal or is_shift_normal:  # ✅ 合并判断
             stat["正常出勤天数"] += 1
         else:
-            stat["缺勤天数"] += 1
+            if "迟到" in pc_status:
+                stat["迟到"] += 1
+            elif "早退" in pc_status:
+                stat["早退"] += 1
+            else:
+                stat["缺勤"] += 1
 
     return list(summary_map.values())

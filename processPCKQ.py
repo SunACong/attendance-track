@@ -8,8 +8,13 @@ def process_pc_attendance(file_path):
     :return: 日期范围(开始日期,结束日期), 精简后的考勤数据DataFrame
     """
     try:
-        # 读取Excel文件
-        df = pd.read_excel(file_path, sheet_name=0, engine='openpyxl')
+        # 读取Excel文件，可能是csv文件
+        df = pd.read_csv(file_path, encoding='gbk')
+        # if file_path.endswith('.xlsx'):
+        #     df = pd.read_excel(file_path, sheet_name=0, engine='openpyxl')
+        # else:
+        #     print("文件不是xlsx格式，尝试读取csv文件")
+        #     df = pd.read_csv(file_path)
 
         # 如果文件中不存在目标列名，给出明确提示
         required_columns = ['姓名', '工号', '出勤状态', '考勤日期']
