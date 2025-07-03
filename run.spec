@@ -21,7 +21,7 @@ a = Analysis(
     binaries=[],
     datas=datas,
     hiddenimports=[
-        'processPCKQ', 'processLGDJ', 'processQJDJ', 'processYDKQ', 'all', 'streamlit'
+        'processPCKQ', 'processLGDJ', 'processQJDJ', 'processYDKQ', 'all', 'streamlit', 'processCCKQ', 'processShift'
     ],
     hookspath=[],
     hooksconfig={},

@@ -1,8 +1,7 @@
 import pandas as pd
 
 def init_attendance_template(df, start_date, end_date):
-
-    print(start_date, end_date)
+    
     """
     初始化考勤模板列表（每人每天一条记录）
     :param df: 含姓名、工号、所在部门的DataFrame
@@ -53,16 +52,21 @@ def build_record_index(template_records):
         for record in template_records
     }
 
-def summarize_attendance(contact_attendance_list, holiday_set):
+def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
 
     summary_map = {}
     for record in contact_attendance_list:
+        emp_id = str(record.get("工号")).strip().zfill(8)
+        attend_date = record["考勤日期"]
         
-        if record["考勤日期"] in holiday_set:
+        # 🧠 如果是假期但不是倒班 ➜ 跳过
+        if attend_date in holiday_set and not shift_day_dict.get((emp_id, attend_date), False):
             continue
 
+        if emp_id == "01996022" and attend_date == pd.to_datetime("2025-6-14"):
+            print("record")
+
         name = record.get("姓名")
-        emp_id = str(record.get("工号")).strip().zfill(8)
         dept = record.get("部门")
 
         pc_status = record.get("pc出勤状态")
@@ -94,8 +98,7 @@ def summarize_attendance(contact_attendance_list, holiday_set):
                 "产假": 0,
                 "陪产假": 0,
                 "育儿假": 0,
-                "其他": 0,
-                "备注": "",
+                "未知请假类型": 0,
             }
 
         stat = summary_map[emp_id]
@@ -131,8 +134,7 @@ def summarize_attendance(contact_attendance_list, holiday_set):
             elif "育儿假" in oa_leave_type:
                 stat["育儿假"] += 1
             else:
-                stat["其他"] += 1
-                stat["备注"] += f"{oa_leave_type} "
+                stat["未知请假类型"] += 1
         elif is_pc_normal or is_oa_normal or is_shift_normal:  # ✅ 合并判断
             stat["正常出勤天数"] += 1
         else:

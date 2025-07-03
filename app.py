@@ -25,14 +25,14 @@ with st.expander("📂 上传所需文件（点击展开）", expanded=True):
         uploaded_files["trip"] = st.file_uploader("🧳 出差记录", type=["xlsx"], key="p7")
 
     with col2:
-        uploaded_files["pc"] = st.file_uploader("💻 PC考勤", type=["xlsx", "csv"], key="p3")
+        uploaded_files["pc"] = st.file_uploader("💻 PC考勤结果", type=["xlsx", "csv"], key="p3")
         uploaded_files["leave"] = st.file_uploader("📝 离岗登记", type=["xlsx"], key="p4")
-        uploaded_files["shift"] = st.file_uploader("🕐 倒班记录", type=["xlsx"], key="p8")  # ✅ 新增上传倒班记录
+        uploaded_files["shift"] = st.file_uploader("🕐 倒班记录", type=["xlsx"], key="p8") 
 
     with col3:
         uploaded_files["qj"] = st.file_uploader("📅 请假记录", type=["xlsx"], key="p5")
         uploaded_files["holiday"] = st.file_uploader("🎉 节假日", type=["xlsx"], key="p6")
-        uploaded_files["record"] = st.file_uploader("🕐 打卡记录", type=["xlsx", "csv"], key="p9")
+        uploaded_files["record"] = st.file_uploader("🕐 PC打卡记录", type=["xlsx", "csv"], key="p9")
 
 # 分析按钮
 if st.button("🚀 开始分析"):
@@ -74,12 +74,11 @@ if st.button("🚀 开始分析"):
             st.info("正在处理文件：出差登记")
             fill_business_trip(index_map, trip_df)
             st.info("正在处理文件：倒班记录")
-            fill_shift_attendance(index_map, shift_df, record_df)
-                
+            shift_day_dict = fill_shift_attendance(index_map, shift_df, record_df)
 
             # 汇总统计
             st.info("正在汇总")
-            summary_result = summarize_attendance(contact_attendance_list, holiday_set)
+            summary_result = summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict)
             df_summary = pd.DataFrame(summary_result)
             df_all = pd.DataFrame(contact_attendance_list)
             st.info("汇总完毕")

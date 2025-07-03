@@ -35,7 +35,6 @@ def fill_business_trip(index_map, trip_df):
         current_date = start_date
         while current_date <= end_date:
             key = (emp_id, current_date)
-            print(key)
             if key in index_map:
                 record = index_map[key]
                 record["oa出差信息"] = True
