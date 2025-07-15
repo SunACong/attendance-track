@@ -36,7 +36,8 @@ def init_attendance_template(df, start_date, end_date):
                 "oa请假类型":"",
                 "oa出差信息": "",
                 "oa出差地点": "",
-                "倒班出勤": "", 
+                "倒班出勤": "",
+                "加班时长": 0, 
             })
     return template_records
 
@@ -78,6 +79,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         oa_trip = record.get("oa出差信息")
         shift_attended = record.get("倒班出勤")
 
+
         if emp_id not in summary_map:
             summary_map[emp_id] = {
                 "姓名": name,
@@ -99,6 +101,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 "陪产假": 0,
                 "育儿假": 0,
                 "未知请假类型": 0,
+                "加班时长": 0,
             }
 
         stat = summary_map[emp_id]
@@ -144,5 +147,5 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 stat["早退"] += 1
             else:
                 stat["缺勤"] += 1
-
+        stat["加班时长"] += record.get("加班时长")
     return list(summary_map.values())
