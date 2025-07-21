@@ -34,6 +34,7 @@ def init_attendance_template(df, start_date, end_date):
                 "oa离岗登记": "",
                 "oa请假信息": "",
                 "oa请假类型":"",
+                "oa请假天数": 0,
                 "oa出差信息": "",
                 "oa出差地点": "",
                 "倒班出勤": "",
@@ -74,6 +75,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         oa_status = record.get("oa出勤状态")
         oa_leave = record.get("oa请假信息")
         oa_leave_type = record.get("oa请假类型")
+        oa_leave_days = record.get("oa请假天数")
         oa_absence = record.get("oa离岗登记")
         oa_clock = record.get("oa是否打卡")
         oa_trip = record.get("oa出差信息")
@@ -102,6 +104,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 "育儿假": 0,
                 "未知请假类型": 0,
                 "加班时长": 0,
+                
             }
 
         stat = summary_map[emp_id]
@@ -118,27 +121,28 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         elif has_oa_trip:
             stat["出差"] += 1
         elif has_oa_leave:
+            stat["正常出勤天数"] += 1
             if "病假" in oa_leave_type:
-                stat["病假"] += 1
+                stat["病假"] += oa_leave_days
             elif "事假" in oa_leave_type:
-                stat["事假"] += 1
+                stat["事假"] += oa_leave_days
             elif "年休假" in oa_leave_type:
-                stat["年休假"] += 1
+                stat["年休假"] += oa_leave_days
             elif "婚" in oa_leave_type or "丧" in oa_leave_type:
-                stat["婚丧假"] += 1
+                stat["婚丧假"] += oa_leave_days
             elif "探亲假" in oa_leave_type:
-                stat["探亲假"] += 1
+                stat["探亲假"] += oa_leave_days
             elif "产假" in oa_leave_type:
-                stat["产假"] += 1
+                stat["产假"] += oa_leave_days
             elif "陪产假" in oa_leave_type:
-                stat["陪产假"] += 1
+                stat["陪产假"] += oa_leave_days
             elif "护理假" in oa_leave_type:
-                stat["护理假"] += 1
+                stat["护理假"] += oa_leave_days
             elif "育儿假" in oa_leave_type:
-                stat["育儿假"] += 1
+                stat["育儿假"] += oa_leave_days
             else:
-                stat["未知请假类型"] += 1
-        elif is_pc_normal or is_oa_normal or is_shift_normal:  # ✅ 合并判断
+                stat["未知请假类型"] += oa_leave_days
+        elif is_pc_normal or is_oa_normal or is_shift_normal:
             stat["正常出勤天数"] += 1
         else:
             if "迟到" in pc_status:
