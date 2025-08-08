@@ -12,10 +12,9 @@ def fill_leave_info(index_map, leave_df):
     leave_df["请假结束日期"] = pd.to_datetime(leave_df["请假结束日期"], errors="coerce")
 
     for _, row in leave_df.iterrows():
-        emp_id = str(row["工号"]).strip().zfill(8)
+        emp_id = row["工号"]
         start_date = row["请假开始日期"].date()
         end_date = row["请假结束日期"].date()
-        # 判断请假类型字段是否为空
         if pd.isna(row["请假类型新"]):
             row["请假类型新"] = "请假类型未知"
 
@@ -26,5 +25,6 @@ def fill_leave_info(index_map, leave_df):
                 record = index_map[key]
                 record["oa请假信息"] = True
                 record["oa请假类型"] = row["请假类型新"]
-                record["oa请假天数"] = row["请假天数"]
+                record["oa请假天数"] = 1 if row["请假天数"] >= 1 else row["请假天数"]
+
             current_date += timedelta(days=1)

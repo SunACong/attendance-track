@@ -1,16 +1,17 @@
+import os
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox
-import pandas as pd
-import time
-import os
 
-from processPCKQ import process_pc_attendance, fill_pc_attendance
-from processYDKQ import fill_oa_attendance
-from processQJDJ import fill_leave_info
-from processLGDJ import fill_leave_registration
+import pandas as pd
+
+from all import build_record_index, init_attendance_template, summarize_attendance
 from processCCKQ import fill_business_trip
+from processLGDJ import fill_leave_registration
+from processPCKQ import fill_pc_attendance, process_pc_attendance
+from processQJDJ import fill_leave_info
 from processShift import fill_shift_attendance
-from all import init_attendance_template, build_record_index, summarize_attendance
+from processYDKQ import fill_oa_attendance
 
 files = {}
 labels = {}
@@ -41,11 +42,11 @@ def run_analysis(root):
 
         person_df = pd.read_excel(files["person"])
         oa_df = pd.read_excel(files["oa"])
-        leave_df = pd.read_excel(files["leave"])
-        qj_df = pd.read_excel(files["qj"])
+        leave_df = pd.read_excel(files["leave"], dtype={"人员编码": str})
+        qj_df = pd.read_excel(files["qj"], dtype={"工号": str})
         holiday_df = pd.read_excel(files["holiday"])
         holiday_set = set(pd.to_datetime(holiday_df["日期"]).dt.date)
-        trip_df = pd.read_excel(files["trip"])
+        trip_df = pd.read_excel(files["trip"], dtype={"人员编码": str})
 
         if files["shift"].endswith(".xlsx"):
             shift_df = pd.read_excel(files["shift"])
@@ -69,6 +70,7 @@ def run_analysis(root):
         update_status(root, "📊 正在处理离岗登记...")
         fill_leave_registration(index_map, leave_df)
         update_status(root, "📊 正在处理请假记录...")
+        print("📊 正在处理请假记录...")
         fill_leave_info(index_map, qj_df)
         update_status(root, "📊 正在处理出差记录...")
         fill_business_trip(index_map, trip_df)

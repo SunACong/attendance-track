@@ -22,14 +22,16 @@ def process_shift_attendance(shift_df, punch_dict, index_map):
                 continue
 
             date_key = start_time.date()
-            next_day_key = (end_time + timedelta(hours=4)).date()
+            end_date_key = end_time.date()
             key = (emp_id, date_key)
 
             shift_day_dict[key] = True
+            if end_date_key != date_key:
+                shift_day_dict[(emp_id, end_date_key)] = True
 
-            # 合并打卡记录（跨天情况）
+            # 合并打卡记录
             punches_today = punch_dict.get((emp_id, date_key), [])
-            punches_next_day = punch_dict.get((emp_id, next_day_key), [])
+            punches_next_day = punch_dict.get((emp_id, end_date_key), [])
             punch_times = sorted(punches_today + punches_next_day)
 
             in_start = start_time - timedelta(hours=2)
@@ -45,8 +47,17 @@ def process_shift_attendance(shift_df, punch_dict, index_map):
 
             index_map[key]["加班时长"] = 0  # 初始化
 
-            if has_valid_in and has_valid_out:
+            if has_valid_in:
+                if key not in index_map:
+                    index_map[key] = {}
                 index_map[key]["倒班出勤"] = True
+
+            if has_valid_out:
+                end_date_key = end_time.date()
+                end_key = (emp_id, end_date_key)
+                if end_key not in index_map:
+                    index_map[end_key] = {}
+                index_map[end_key]["倒班出勤"] = True
 
         except Exception as e:
             print(f"❌ 错误发生在第{idx}行，员工ID={row.get('工号')}")

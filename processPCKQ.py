@@ -17,7 +17,7 @@ def process_pc_attendance(file_path):
         #     df = pd.read_csv(file_path)
 
         # 如果文件中不存在目标列名，给出明确提示
-        required_columns = ['姓名', '工号', '出勤状态', '考勤日期']
+        required_columns = ['姓名', '工号', '出勤状态', '考勤日期', '上班考勤时间', '下班考勤时间']
         missing_cols = [col for col in required_columns if col not in df.columns]
         if missing_cols:
             raise ValueError(f"缺少必要列：{missing_cols}")
@@ -67,11 +67,23 @@ def fill_pc_attendance(index_map, pc_df):
         emp_id= str(row["工号"]).strip().zfill(8)
         date = pd.to_datetime(row["考勤日期"]).date()
         status = row["出勤状态"]
+        start = row["上班考勤时间"]
+        end = row["下班考勤时间"]
 
         key = (emp_id, date)
-        if key in index_map:
+        # if emp_id == "02005006":
+        #     print(f"[DEBUG] 工号{emp_id} 在 {date} 的 start={repr(start)} ({type(start)}), end={repr(end)} ({type(end)})")
+
+        if is_empty_time(start) and is_empty_time(end):
+            if key in index_map:
+                index_map[key]["pc出勤状态"] = ""
+            print(f"工号{emp_id}在{date}的考勤记录为空")
+        elif key in index_map:
             index_map[key]["pc出勤状态"] = status
-        if pd.isna(index_map[key]["上班考勤时间"]) and pd.isna(index_map[key]["下班考勤时间"]):
-            index_map[key]["pc出勤状态"] = ""
-        # else:
-            # print(f"❗PC考勤表: {row},未找到 key: {key}，请确认 index_map 中是否存在") 
+
+def is_empty_time(val):
+    if val is None:
+        return True
+    if isinstance(val, str):
+        return val.strip() == ''
+    return pd.isna(val)

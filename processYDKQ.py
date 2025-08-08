@@ -20,7 +20,7 @@ def fill_oa_attendance(index_map, oa_df):
     grouped = oa_df.groupby(["编号", "打卡日期"])
 
     for (emp_id, date), group in grouped:
-        has_morning = any(t < 8 for t in group["打卡小时"])
+        has_morning = any(t < 9 for t in group["打卡小时"])
         has_evening = any(t > 18 or (t == 18 and m > 0) for t, m in zip(group["打卡小时"], group["打卡分钟"]))
 
         key = (emp_id, date)

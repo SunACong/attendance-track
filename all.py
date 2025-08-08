@@ -103,13 +103,13 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 "陪产假": 0,
                 "育儿假": 0,
                 "未知请假类型": 0,
-                "加班时长": 0,
-                
+                "加班时长": 0, 
             }
 
         stat = summary_map[emp_id]
 
-        is_all_empty = not pc_status and not oa_status and not oa_absence and not oa_leave and not oa_clock
+        is_all_empty = not pc_status and not oa_status and not oa_absence and not oa_leave and not oa_clock and not oa_trip
+
         is_pc_normal = oa_absence is True or pc_status == "正常出勤"
         is_oa_normal = oa_status == "正常出勤"
         has_oa_leave = oa_leave is True
@@ -121,7 +121,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         elif has_oa_trip:
             stat["出差"] += 1
         elif has_oa_leave:
-            stat["正常出勤天数"] += 1
+            stat["正常出勤天数"] += 1 - oa_leave_days
             if "病假" in oa_leave_type:
                 stat["病假"] += oa_leave_days
             elif "事假" in oa_leave_type:
@@ -152,4 +152,5 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
             else:
                 stat["缺勤"] += 1
         stat["加班时长"] += record.get("加班时长")
+    
     return list(summary_map.values())
