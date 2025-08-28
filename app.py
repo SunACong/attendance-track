@@ -86,8 +86,26 @@ def run_analysis(root):
         save_base = filedialog.asksaveasfilename(title="保存结果文件", defaultextension=".xlsx",
                                                   filetypes=[("Excel 文件", "*.xlsx")])
         if save_base:
-            df_summary.to_excel(save_base.replace(".xlsx", "_汇总.xlsx"), index=False)
-            df_all.to_excel(save_base.replace(".xlsx", "_明细.xlsx"), index=False)
+            # df_summary.to_excel(save_base.replace(".xlsx", "_汇总.xlsx"), index=False)
+            # df_all.to_excel(save_base.replace(".xlsx", "_明细.xlsx"), index=False)
+            # 保存总表
+            summary_path = save_base.replace(".xlsx", "_汇总.xlsx")
+            detail_path = save_base.replace(".xlsx", "_明细.xlsx")
+            df_summary.to_excel(summary_path, index=False)
+            df_all.to_excel(detail_path, index=False)
+
+            # ====== 按一级部门拆分文件 ======
+            if "部门" in df_summary.columns:
+                base_dir = os.path.dirname(summary_path)
+
+                dept_groups = df_summary.groupby(df_summary["部门"].astype(str).str.split("/").str[0])
+
+                for dept, group in dept_groups:
+                    dept_name = str(dept).strip().replace("/", "_").replace("\\", "_")
+                    dept_file = os.path.join(base_dir, f"{dept_name}_汇总.xlsx")
+                    group.to_excel(dept_file, index=False)
+
+                update_status(root, f"✅ 已按一级部门拆分汇总文件，共 {df_summary['部门'].astype(str).str.split('/').str[0].nunique()} 个一级部门")
 
         elapsed = time.time() - start_time
         update_status(root, f"✅ 分析完成，用时 {elapsed:.2f} 秒。")

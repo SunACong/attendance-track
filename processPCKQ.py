@@ -77,7 +77,6 @@ def fill_pc_attendance(index_map, pc_df):
         if is_empty_time(start) and is_empty_time(end):
             if key in index_map:
                 index_map[key]["pc出勤状态"] = ""
-            print(f"工号{emp_id}在{date}的考勤记录为空")
         elif key in index_map:
             index_map[key]["pc出勤状态"] = status
 

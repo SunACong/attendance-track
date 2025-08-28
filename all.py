@@ -62,11 +62,8 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         attend_date = record["考勤日期"]
         
         # 🧠 如果是假期但不是倒班 ➜ 跳过
-        if attend_date in holiday_set and not shift_day_dict.get((emp_id, attend_date), False):
+        if attend_date in holiday_set:
             continue
-
-        if emp_id == "01996022" and attend_date == pd.to_datetime("2025-6-14"):
-            print("record")
 
         name = record.get("姓名")
         dept = record.get("部门")
@@ -108,7 +105,8 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
 
         stat = summary_map[emp_id]
 
-        is_all_empty = not pc_status and not oa_status and not oa_absence and not oa_leave and not oa_clock and not oa_trip
+        is_all_empty = not pc_status and not oa_status and not oa_absence and not oa_leave and not oa_clock and not oa_trip and not shift_attended
+
 
         is_pc_normal = oa_absence is True or pc_status == "正常出勤"
         is_oa_normal = oa_status == "正常出勤"

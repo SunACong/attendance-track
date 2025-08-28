@@ -99,7 +99,7 @@ def process_overtime_and_guesthouse(punch_dict, org_dict, index_map):
             standard_end = datetime.combine(latest.date(), datetime.strptime("18:30", "%H:%M").time())
             overtime = latest - standard_end
             if overtime.total_seconds() > 0:
-                index_map[key]["加班时长"] = round(overtime.total_seconds() / 60, 2)
+                index_map[key]["加班时长"] = int(overtime.total_seconds() / 3600)
 
 
 def fill_shift_attendance(index_map, shift_df, record_df):
