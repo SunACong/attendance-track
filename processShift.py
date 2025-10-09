@@ -34,7 +34,7 @@ def process_shift_attendance(shift_df, punch_dict, index_map):
             punches_next_day = punch_dict.get((emp_id, end_date_key), [])
             punch_times = sorted(punches_today + punches_next_day)
 
-            in_start = start_time - timedelta(hours=2)
+            in_start = start_time - timedelta(hours=4)
             in_end = start_time + timedelta(minutes=30)
             out_start = end_time - timedelta(minutes=30)
             out_end = end_time + timedelta(hours=4)

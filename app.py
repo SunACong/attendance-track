@@ -2,7 +2,7 @@ import os
 import time
 import tkinter as tk
 from tkinter import filedialog, messagebox
-
+import shutil
 import pandas as pd
 
 from all import build_record_index, init_attendance_template, summarize_attendance
@@ -17,6 +17,9 @@ files = {}
 labels = {}
 status_label = None
 
+# === 在保存汇总表之前，清理 0 ===
+def clean_zeros(df):
+    return df.applymap(lambda x: "" if (isinstance(x, (int, float)) and x == 0) else x)
 
 def upload_file(key):
     path = filedialog.askopenfilename(filetypes=[("Excel or CSV files", "*.xlsx *.csv")])
@@ -86,26 +89,52 @@ def run_analysis(root):
         save_base = filedialog.asksaveasfilename(title="保存结果文件", defaultextension=".xlsx",
                                                   filetypes=[("Excel 文件", "*.xlsx")])
         if save_base:
-            # df_summary.to_excel(save_base.replace(".xlsx", "_汇总.xlsx"), index=False)
-            # df_all.to_excel(save_base.replace(".xlsx", "_明细.xlsx"), index=False)
-            # 保存总表
-            summary_path = save_base.replace(".xlsx", "_汇总.xlsx")
-            detail_path = save_base.replace(".xlsx", "_明细.xlsx")
+            # 根目录
+            base_dir = os.path.dirname(save_base)
+
+            # === 清空根目录下的旧文件/文件夹 ===
+            for item in os.listdir(base_dir):
+                item_path = os.path.join(base_dir, item)
+                try:
+                    if os.path.isfile(item_path) or os.path.islink(item_path):
+                        os.remove(item_path)
+                    elif os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                except Exception as e:
+                    print(f"清理失败: {item_path}, {e}")
+
+            # === 保存新的结果 ===
+            summary_path = os.path.join(base_dir, "所有单位汇总表.xlsx")
+            detail_path = os.path.join(base_dir, "所有单位明细表.xlsx")
+            df_summary = clean_zeros(df_summary)  # 汇总表清理
             df_summary.to_excel(summary_path, index=False)
             df_all.to_excel(detail_path, index=False)
 
-            # ====== 按一级部门拆分文件 ======
+            # 创建子目录
+            summary_dir = os.path.join(base_dir, "各单位汇总表")
+            detail_dir = os.path.join(base_dir, "各单位明细表")
+            os.makedirs(summary_dir, exist_ok=True)
+            os.makedirs(detail_dir, exist_ok=True)
+
+            # 按一级部门分组并导出
             if "部门" in df_summary.columns:
-                base_dir = os.path.dirname(summary_path)
+                dept_groups_summary = df_summary.groupby(df_summary["部门"].astype(str).str.split("/").str[0])
+                dept_groups_detail = df_all.groupby(df_all["部门"].astype(str).str.split("/").str[0])
 
-                dept_groups = df_summary.groupby(df_summary["部门"].astype(str).str.split("/").str[0])
-
-                for dept, group in dept_groups:
+                for dept, group in dept_groups_summary:
                     dept_name = str(dept).strip().replace("/", "_").replace("\\", "_")
-                    dept_file = os.path.join(base_dir, f"{dept_name}_汇总.xlsx")
+                    dept_file = os.path.join(summary_dir, f"{dept_name}_汇总.xlsx")
                     group.to_excel(dept_file, index=False)
 
-                update_status(root, f"✅ 已按一级部门拆分汇总文件，共 {df_summary['部门'].astype(str).str.split('/').str[0].nunique()} 个一级部门")
+                for dept, group in dept_groups_detail:
+                    dept_name = str(dept).strip().replace("/", "_").replace("\\", "_")
+                    dept_file = os.path.join(detail_dir, f"{dept_name}_明细.xlsx")
+                    group.to_excel(dept_file, index=False)
+
+                update_status(
+                    root,
+                    f"✅ 已拆分完成，共 {df_summary['部门'].astype(str).str.split('/').str[0].nunique()} 个一级部门"
+                )
 
         elapsed = time.time() - start_time
         update_status(root, f"✅ 分析完成，用时 {elapsed:.2f} 秒。")

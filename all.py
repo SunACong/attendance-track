@@ -60,9 +60,11 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
     for record in contact_attendance_list:
         emp_id = str(record.get("工号")).strip().zfill(8)
         attend_date = record["考勤日期"]
+        oa_leave = record.get("oa请假信息")
+        has_oa_leave = oa_leave is True
         
         # 🧠 如果是假期但不是倒班 ➜ 跳过
-        if attend_date in holiday_set:
+        if attend_date in holiday_set and not has_oa_leave:
             continue
 
         name = record.get("姓名")
@@ -110,7 +112,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
 
         is_pc_normal = oa_absence is True or pc_status == "正常出勤"
         is_oa_normal = oa_status == "正常出勤"
-        has_oa_leave = oa_leave is True
+        
         has_oa_trip = oa_trip is True
         is_shift_normal = shift_attended is True  # ✅ 倒班出勤判断
         
