@@ -57,9 +57,9 @@ def run_analysis(root):
             shift_df = pd.read_csv(files["shift"], encoding="gbk")
 
         if files["record"].endswith(".csv"):
-            record_df = pd.read_csv(files["record"], encoding="gbk", parse_dates=["考勤时间"])
+            record_df = pd.read_csv(files["record"], encoding="gbk", parse_dates=["考勤时间"], dtype={"工号": str})
         else:
-            record_df = pd.read_excel(files["record"])
+            record_df = pd.read_excel(files["record"], dtype={"工号": str})
 
         update_status(root, "📊 正在处理 PC 考勤结果...")
         date_range, attendance_data = process_pc_attendance(files["pc"])
