@@ -1,6 +1,7 @@
 import pandas as pd
 from collections import defaultdict
 from datetime import datetime, timedelta
+import math
 
 def process_shift_attendance(shift_df, punch_dict, index_map):
     """
@@ -69,7 +70,7 @@ def process_shift_attendance(shift_df, punch_dict, index_map):
 
 
 
-def process_overtime_and_guesthouse(punch_dict, org_dict, index_map):
+def process_overtime_and_guesthouse(punch_dict, org_dict, index_map, holiday_set):
     """
     针对所有有打卡记录的员工，计算加班时长、招待所员工出勤时长
     """
@@ -93,16 +94,31 @@ def process_overtime_and_guesthouse(punch_dict, org_dict, index_map):
                 index_map[key]["pc出勤状态"] = "正常出勤"
             elif duration >= timedelta(hours=7):
                 index_map[key]["pc出勤状态"] = "缺勤"
+                index_map[key]["是否异常"] = "是"
             else:
-                index_map[key]["pc出勤状态"] = ""
+                index_map[key]["pc出勤状态"] = "出勤时间少于7小时"
+                index_map[key]["是否异常"] = "是"
         else:
-            standard_end = datetime.combine(latest.date(), datetime.strptime("18:30", "%H:%M").time())
-            overtime = latest - standard_end
-            if overtime.total_seconds() > 0:
-                index_map[key]["加班时长"] = int(overtime.total_seconds() / 3600)
+            if date in holiday_set:
+                # 获取当天所有打卡记录
+                punches_today = punch_dict.get((emp_id, date), [])
+                # 如果当天有打卡记录，计算时间间隔
+                if punches_today:
+                    # 排序打卡时间
+                    sorted_punches = sorted(punches_today)
+                    # 获取最早和最晚打卡时间
+                    earliest_punch = sorted_punches[0]
+                    latest_punch = sorted_punches[-1]
+                    # 计算时间间隔（单位：小时）
+                    index_map[key]["加班时长"] = math.ceil((latest_punch - earliest_punch).total_seconds() / 3600)
+            else :
+                standard_end = datetime.combine(latest.date(), datetime.strptime("18:30", "%H:%M").time())
+                overtime = latest - standard_end
+                if overtime.total_seconds() > 0:
+                    index_map[key]["加班时长"] = math.ceil(overtime.total_seconds() / 3600)
 
 
-def fill_shift_attendance(index_map, shift_df, record_df):
+def fill_shift_attendance(index_map, shift_df, record_df, holiday_set):
     """
     主函数：处理倒班出勤、加班时长与招待所正常出勤
     """
@@ -131,7 +147,7 @@ def fill_shift_attendance(index_map, shift_df, record_df):
     print("倒班员工出勤已经完成")
 
     # Step 3: 针对所有员工统计加班/出勤
-    process_overtime_and_guesthouse(punch_dict, org_dict, index_map)
+    process_overtime_and_guesthouse(punch_dict, org_dict, index_map, holiday_set)
     print("加班已经完成")
 
     return shift_day_dict

@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import shutil
 import pandas as pd
+from openpyxl.styles import PatternFill
+from openpyxl import Workbook
 
 from all import build_record_index, init_attendance_template, summarize_attendance
 from processCCKQ import fill_business_trip
@@ -21,6 +23,38 @@ status_label = None
 def clean_zeros(df):
     return df.applymap(lambda x: "" if (isinstance(x, (int, float)) and x == 0) else x)
 
+# === 保存带颜色标记的Excel文件 ===
+def save_excel_with_highlight(df, file_path):
+    # 创建ExcelWriter对象
+    writer = pd.ExcelWriter(file_path, engine='openpyxl')
+    # 将DataFrame写入Excel
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    # 获取工作表对象
+    worksheet = writer.sheets['Sheet1']
+    
+    # 查找'是否异常'列的索引
+    abnormal_col = None
+    for col_idx, col_name in enumerate(df.columns):
+        if col_name == '是否异常':
+            abnormal_col = col_idx + 1  # openpyxl列索引从1开始
+            break
+    
+    # 如果找到'是否异常'列，添加颜色标记
+    if abnormal_col is not None:
+        # 创建填充样式（黄色背景）
+        fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+        
+        # 遍历所有行，标记'是否异常'为'是'的行
+        for row_idx in range(2, len(df) + 2):  # 从第二行开始（第一行是表头）
+            cell = worksheet.cell(row=row_idx, column=abnormal_col)
+            if cell.value == '是':
+                # 标记整行
+                for col in range(1, len(df.columns) + 1):
+                    worksheet.cell(row=row_idx, column=col).fill = fill
+    
+    # 保存文件
+    writer.close()
+
 def upload_file(key):
     path = filedialog.askopenfilename(filetypes=[("Excel or CSV files", "*.xlsx *.csv")])
     if path:
@@ -28,9 +62,11 @@ def upload_file(key):
         labels[key].config(text=os.path.basename(path))
 
 
+
 def update_status(root, message):
     status_label.config(text=message)
     root.update_idletasks()
+
 
 
 def run_analysis(root):
@@ -78,11 +114,13 @@ def run_analysis(root):
         update_status(root, "📊 正在处理出差记录...")
         fill_business_trip(index_map, trip_df)
         update_status(root, "📊 正在处理倒班记录...")
-        shift_day_dict = fill_shift_attendance(index_map, shift_df, record_df)
+        shift_day_dict = fill_shift_attendance(index_map, shift_df, record_df, holiday_set)
 
         update_status(root, "📊 正在汇总数据...")
         summary_result = summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict)
         df_summary = pd.DataFrame(summary_result)
+        # 打印holiday_set前五条数据
+        # print(holiday_set[:5])
         df_all = pd.DataFrame(contact_attendance_list)
 
         update_status(root, "💾 正在保存结果...")
@@ -107,8 +145,13 @@ def run_analysis(root):
             summary_path = os.path.join(base_dir, "所有单位汇总表.xlsx")
             detail_path = os.path.join(base_dir, "所有单位明细表.xlsx")
             df_summary = clean_zeros(df_summary)  # 汇总表清理
-            df_summary.to_excel(summary_path, index=False)
-            df_all.to_excel(detail_path, index=False)
+            
+            # 使用带颜色标记的保存函数
+            update_status(root, "💾 正在保存带颜色标记的汇总表...")
+            save_excel_with_highlight(df_summary, summary_path)
+            
+            update_status(root, "💾 正在保存带颜色标记的明细表...")
+            save_excel_with_highlight(df_all, detail_path)
 
             # 创建子目录
             summary_dir = os.path.join(base_dir, "各单位汇总表")
@@ -124,12 +167,12 @@ def run_analysis(root):
                 for dept, group in dept_groups_summary:
                     dept_name = str(dept).strip().replace("/", "_").replace("\\", "_")
                     dept_file = os.path.join(summary_dir, f"{dept_name}_汇总.xlsx")
-                    group.to_excel(dept_file, index=False)
+                    save_excel_with_highlight(group, dept_file)
 
                 for dept, group in dept_groups_detail:
                     dept_name = str(dept).strip().replace("/", "_").replace("\\", "_")
                     dept_file = os.path.join(detail_dir, f"{dept_name}_明细.xlsx")
-                    group.to_excel(dept_file, index=False)
+                    save_excel_with_highlight(group, dept_file)
 
                 update_status(
                     root,
@@ -142,6 +185,7 @@ def run_analysis(root):
     except Exception as e:
         messagebox.showerror("出错啦", str(e))
         update_status(root, "❌ 分析失败")
+
 
 
 def main():

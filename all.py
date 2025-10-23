@@ -38,7 +38,8 @@ def init_attendance_template(df, start_date, end_date):
                 "oa出差信息": "",
                 "oa出差地点": "",
                 "倒班出勤": "",
-                "加班时长": 0, 
+                "加班时长": 0,
+                "是否异常": "",
             })
     return template_records
 
@@ -63,9 +64,6 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         oa_leave = record.get("oa请假信息")
         has_oa_leave = oa_leave is True
         
-        # 🧠 如果是假期但不是倒班 ➜ 跳过
-        if attend_date in holiday_set and not has_oa_leave:
-            continue
 
         name = record.get("姓名")
         dept = record.get("部门")
@@ -103,6 +101,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 "育儿假": 0,
                 "未知请假类型": 0,
                 "加班时长": 0, 
+                "节假日加班时长": 0,
             }
 
         stat = summary_map[emp_id]
@@ -115,9 +114,16 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         
         has_oa_trip = oa_trip is True
         is_shift_normal = shift_attended is True  # ✅ 倒班出勤判断
+
+        # 如果考勤日期是节假日且没有OA请假记录，则跳过当前记录
+        if attend_date in holiday_set:
+            stat["节假日加班时长"] += record.get("加班时长")
+            if not has_oa_leave:
+                continue
         
         if is_all_empty:
             stat["旷工天数"] += 1
+            record["是否异常"] = "是"
         elif has_oa_trip:
             stat["出差"] += 1
         elif has_oa_leave:
@@ -151,6 +157,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 stat["早退"] += 1
             else:
                 stat["缺勤"] += 1
+            record["是否异常"] = "是"
         stat["加班时长"] += record.get("加班时长")
     
     return list(summary_map.values())
