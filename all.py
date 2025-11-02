@@ -1,6 +1,4 @@
 import pandas as pd
-from collections import defaultdict
-import datetime as dt
 
 def init_attendance_template(df, start_date, end_date):
     
@@ -165,7 +163,19 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
     
     return list(summary_map.values())
 
-# 处理倒班出勤字典，字典的key是由工号和日期组成的元组，我的要求如下“
+# 处理倒班出勤字典，字典的key是由工号和日期组成的元组，我的要求如下
 # 返回值是一个新的字典，字典的key是工号，值是这个工号这个月的倒班天数
 def deal_shift(shift_day_dict):
-    return 1;
+
+    # 创建一个字典来存储每个员工的倒班天数
+    emp_shift_days = {}
+    
+    # 遍历shift_day_dict中的所有键
+    for emp_id, date in shift_day_dict.keys():
+        # 如果员工ID不在emp_shift_days中，初始化为0
+        if emp_id not in emp_shift_days:
+            emp_shift_days[emp_id] = 0
+        # 增加该员工的倒班天数
+        emp_shift_days[emp_id] += 1
+    
+    return emp_shift_days
