@@ -1,5 +1,5 @@
 import pandas as pd
-
+import re
 
 def fill_oa_attendance(index_map, oa_df):
     """
@@ -16,7 +16,8 @@ def fill_oa_attendance(index_map, oa_df):
     oa_df["打卡分钟"] = oa_df["打卡时间"].dt.minute
 
     # 分组处理：按工号 + 打卡日期聚合 工号转换为字符串
-    oa_df["编号"] = oa_df["编号"].astype(str).str.zfill(8)
+    # 使用正则表达式去除所有空白字符（空格、制表符、换行符等）
+    oa_df["编号"] = oa_df["编号"].astype(str).str.replace(r'\s+', '', regex=True)
     grouped = oa_df.groupby(["编号", "打卡日期"])
 
     for (emp_id, date), group in grouped:
@@ -29,4 +30,4 @@ def fill_oa_attendance(index_map, oa_df):
             record["oa出勤状态"] = "正常出勤" if has_morning and has_evening else "异常"
             record["oa是否打卡"] = True
         # else:
-            # print(f"❗OA考勤表: {grouped},未找到 key: {key}，请确认 index_map 中是否存在") 
+            # print(f"❗OA考勤表: {grouped},未找到 key: {key}，请确认 index_map 中是否存在")

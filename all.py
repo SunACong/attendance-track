@@ -1,4 +1,6 @@
 import pandas as pd
+from collections import defaultdict
+import datetime as dt
 
 def init_attendance_template(df, start_date, end_date):
     
@@ -101,7 +103,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 "育儿假": 0,
                 "未知请假类型": 0,
                 "加班时长": 0, 
-                "节假日加班时长": 0,
+                "节假日打卡天数": 0,
             }
 
         stat = summary_map[emp_id]
@@ -117,7 +119,8 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
 
         # 如果考勤日期是节假日且没有OA请假记录，则跳过当前记录
         if attend_date in holiday_set:
-            stat["节假日加班时长"] += record.get("加班时长")
+            if record.get("加班时长", 0) > 0:
+                stat["节假日打卡天数"] += 1
             if not has_oa_leave:
                 continue
         
@@ -161,3 +164,8 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         stat["加班时长"] += record.get("加班时长")
     
     return list(summary_map.values())
+
+# 处理倒班出勤字典，字典的key是由工号和日期组成的元组，我的要求如下“
+# 返回值是一个新的字典，字典的key是工号，值是这个工号这个月的倒班天数
+def deal_shift(shift_day_dict):
+    return 1;

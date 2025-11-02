@@ -1,4 +1,4 @@
-from hmac import new
+import re
 import pandas as pd
 from datetime import timedelta
 
@@ -6,11 +6,13 @@ def fill_leave_registration(index_map, leave_df):
     leave_df.columns = leave_df.columns.str.strip()
     leave_df["离岗日期"] = pd.to_datetime(leave_df["离岗日期"])
     leave_df["返岗日期"] = pd.to_datetime(leave_df["返岗日期"])
-    leave_df["人员编码"] = leave_df["人员编码"].astype(str).str.strip()
+    # 使用正则表达式去除所有空白字符（空格、制表符、换行符等）
+    leave_df["人员编码"] = leave_df["人员编码"].astype(str).str.replace(r'\s+', '', regex=True)
 
 
     for _, row in leave_df.iterrows():
-        emp_id = str(row["人员编码"]).strip().zfill(8)
+        # 使用正则表达式去除所有空白字符
+        emp_id = re.sub(r'\s+', '', str(row["人员编码"]))
         start_date = row["离岗日期"].date()
         
         # 如果返岗日期为 NaT，则默认为离岗日期

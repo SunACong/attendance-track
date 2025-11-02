@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 from datetime import datetime
 
 def process_pc_attendance(file_path):
@@ -63,8 +64,8 @@ def fill_pc_attendance(index_map, pc_df):
     :return: None（直接修改记录）
     """
     for _, row in pc_df.iterrows():
-        # 转换为字符串
-        emp_id= str(row["工号"]).strip().zfill(8)
+        # 使用正则表达式去除所有空白字符（空格、制表符、换行符等）
+        emp_id = re.sub(r'\s+', '', str(row["工号"]))
         date = pd.to_datetime(row["考勤日期"]).date()
         status = row["出勤状态"]
         start = row["上班考勤时间"]

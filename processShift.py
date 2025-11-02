@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 import math
@@ -14,7 +15,8 @@ def process_shift_attendance(shift_df, punch_dict, index_map):
 
     for idx, row in shift_df.iterrows():
         try:
-            emp_id = str(row.get("工号", "")).strip().zfill(8)
+            # 使用正则表达式去除所有空白字符（空格、制表符、换行符等）
+            emp_id = re.sub(r'\s+', '', str(row["工号"]))  # 使用正则表达式去除所有空白字符
             start_time = pd.to_datetime(row.get("上班时间", ""), errors="coerce")
             end_time = pd.to_datetime(row.get("下班时间", ""), errors="coerce")
 
@@ -130,7 +132,7 @@ def fill_shift_attendance(index_map, shift_df, record_df, holiday_set):
     org_dict = {}
     print("开始构建打卡字典")
     for _, row in record_df.iterrows():
-        emp_id = str(row["工号"]).strip().zfill(8)
+        emp_id = re.sub(r'\s+', '', str(row["工号"]))  # 使用正则表达式去除所有空白字符
         punch_time = pd.to_datetime(row["考勤时间"], errors="coerce")
         org_name = str(row.get("所属组织", "")).strip()
 
