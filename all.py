@@ -56,7 +56,7 @@ def build_record_index(template_records):
     }
 
 def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
-
+    emp_shift_days = deal_shift(shift_day_dict)
     summary_map = {}
     for record in contact_attendance_list:
         emp_id = str(record.get("工号")).strip().zfill(8)
@@ -115,14 +115,18 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         has_oa_trip = oa_trip is True
         is_shift_normal = shift_attended is True  # ✅ 倒班出勤判断
 
+        # 获取员工倒班天数，如果工号不在emp_shift_days中，则默认为0
+        total_shift_days = emp_shift_days.get(emp_id, 0)
+
         # 如果考勤日期是节假日且没有OA请假记录，则跳过当前记录
         if attend_date in holiday_set:
             if record.get("加班时长", 0) > 0:
                 stat["节假日打卡天数"] += 1
-            if not has_oa_leave:
+            if not has_oa_leave and total_shift_days > 15:
                 continue
         
-        if is_all_empty:
+        
+        if is_all_empty and total_shift_days < 15:
             stat["旷工天数"] += 1
             record["是否异常"] = "是"
         elif has_oa_trip:
