@@ -28,6 +28,6 @@ def fill_oa_attendance(index_map, oa_df):
         if key in index_map:
             record = index_map[key]
             record["oa出勤状态"] = "正常出勤" if has_morning and has_evening else "异常"
-            record["oa是否打卡"] = True
+            record["oa是否打卡"] = True 
         # else:
             # print(f"❗OA考勤表: {grouped},未找到 key: {key}，请确认 index_map 中是否存在")

@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import timedelta
+import re
 
 def fill_business_trip(index_map, trip_df):
     """
@@ -13,8 +14,8 @@ def fill_business_trip(index_map, trip_df):
 
     for _, row in trip_df.iterrows():
         # emp_id被错误识别为数字后带了.0后缀
-        try:emp_id=str(int(row["人员编号"])).strip()
-        except(ValueError,TypeError):emp_id=str(row["人员编号"]).strip()
+        emp_id = str(row["人员编号"])
+        emp_id = re.sub(r'\s+', '', emp_id).strip()
         location = row.get("出差地点", "未知地点")
 
         # ✅ 校验开始与结束日期

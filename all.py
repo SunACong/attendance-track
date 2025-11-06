@@ -21,8 +21,11 @@ def init_attendance_template(df, start_date, end_date):
 
     date_range = pd.date_range(start=start_date, end=end_date).date
 
+    person_dept_dict = dict(zip(unique_people["工号"], unique_people["所在部门"]))
+
     template_records = []
     for _, person in unique_people.iterrows():
+
         for date in date_range:
             template_records.append({
                 "姓名": person["姓名"],
@@ -41,7 +44,7 @@ def init_attendance_template(df, start_date, end_date):
                 "加班时长": 0,
                 "是否异常": "",
             })
-    return template_records
+    return template_records, person_dept_dict
 
 
 def build_record_index(template_records):
@@ -117,16 +120,18 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
 
         # 获取员工倒班天数，如果工号不在emp_shift_days中，则默认为0
         total_shift_days = emp_shift_days.get(emp_id, 0)
+        
 
         # 如果考勤日期是节假日且没有OA请假记录，则跳过当前记录
         if attend_date in holiday_set:
             if record.get("加班时长", 0) > 0:
                 stat["节假日打卡天数"] += 1
-            if not has_oa_leave and total_shift_days > 15:
+            if not has_oa_leave and total_shift_days < 9:
                 continue
         
+
         
-        if is_all_empty and total_shift_days < 15:
+        if is_all_empty and total_shift_days < 9:
             stat["旷工天数"] += 1
             record["是否异常"] = "是"
         elif has_oa_trip:
@@ -156,13 +161,14 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         elif is_pc_normal or is_oa_normal or is_shift_normal:
             stat["正常出勤天数"] += 1
         else:
-            if "迟到" in pc_status:
-                stat["迟到"] += 1
-            elif "早退" in pc_status:
-                stat["早退"] += 1
-            else:
-                stat["缺勤"] += 1
-            record["是否异常"] = "是"
+            if total_shift_days < 9:
+                if "迟到" in pc_status:
+                    stat["迟到"] += 1
+                elif "早退" in pc_status:
+                    stat["早退"] += 1
+                else:
+                    stat["缺勤"] += 1
+                record["是否异常"] = "是"
         stat["加班时长"] += record.get("加班时长")
     
     return list(summary_map.values())

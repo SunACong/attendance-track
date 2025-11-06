@@ -79,18 +79,18 @@ def run_analysis(root):
         start_time = time.time()
         update_status(root, "🕐 正在加载数据...")
 
-        person_df = pd.read_excel(files["person"])
-        oa_df = pd.read_excel(files["oa"])
+        person_df = pd.read_excel(files["person"], dtype={"工号": str})
+        oa_df = pd.read_excel(files["oa"], dtype={"编号": str})
         leave_df = pd.read_excel(files["leave"], dtype={"人员编码": str})
         qj_df = pd.read_excel(files["qj"], dtype={"工号": str})
         holiday_df = pd.read_excel(files["holiday"])
         holiday_set = set(pd.to_datetime(holiday_df["日期"]).dt.date)
-        trip_df = pd.read_excel(files["trip"], dtype={"人员编码": str})
+        trip_df = pd.read_excel(files["trip"], dtype={"人员编号": str})
 
         if files["shift"].endswith(".xlsx"):
-            shift_df = pd.read_excel(files["shift"])
+            shift_df = pd.read_excel(files["shift"], dtype={"工号": str})
         else:
-            shift_df = pd.read_csv(files["shift"], encoding="gbk")
+            shift_df = pd.read_csv(files["shift"], encoding="gbk", dtype={"工号": str})
 
         if files["record"].endswith(".csv"):
             record_df = pd.read_csv(files["record"], encoding="gbk", parse_dates=["考勤时间"], dtype={"工号": str})
@@ -99,7 +99,7 @@ def run_analysis(root):
 
         update_status(root, "📊 正在处理 PC 考勤结果...")
         date_range, attendance_data = process_pc_attendance(files["pc"])
-        contact_attendance_list = init_attendance_template(person_df, date_range[0], date_range[1])
+        contact_attendance_list, person_dept_dict = init_attendance_template(person_df, date_range[0], date_range[1])
         index_map = build_record_index(contact_attendance_list)
 
         fill_pc_attendance(index_map, attendance_data)
@@ -114,7 +114,7 @@ def run_analysis(root):
         update_status(root, "📊 正在处理出差记录...")
         fill_business_trip(index_map, trip_df)
         update_status(root, "📊 正在处理倒班记录...")
-        shift_day_dict = fill_shift_attendance(index_map, shift_df, record_df, holiday_set)
+        shift_day_dict = fill_shift_attendance(index_map, shift_df, record_df, holiday_set, person_dept_dict)
 
         update_status(root, "📊 正在汇总数据...")
         summary_result = summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict)
