@@ -105,10 +105,11 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 "未知请假类型": 0,
                 "加班时长": 0, 
                 "节假日打卡天数": 0,
+                "旷工/请假天数": 0,
             }
 
         stat = summary_map[emp_id]
-
+        
         is_all_empty = not pc_status and not oa_status and not oa_absence and not oa_leave and not oa_clock and not oa_trip and not shift_attended
 
 
@@ -133,11 +134,13 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
         
         if is_all_empty and total_shift_days < 9:
             stat["旷工天数"] += 1
+            stat["旷工/请假天数"] += 1
             record["是否异常"] = "是"
         elif has_oa_trip:
             stat["出差"] += 1
         elif has_oa_leave:
             stat["正常出勤天数"] += 1 - oa_leave_days
+            stat["旷工/请假天数"] += 1
             if "病假" in oa_leave_type:
                 stat["病假"] += oa_leave_days
             elif "事假" in oa_leave_type:
@@ -169,12 +172,12 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 else:
                     stat["缺勤"] += 1
                 record["是否异常"] = "是"
-        stat["加班时长"] += record.get("加班时长")
-    
+        stat["加班时长"] += record.get("加班时长", 0)
+        if emp_id == "11990062":
+                print(f"工号11990062 - {attend_date}: {stat}")
     return list(summary_map.values())
 
-# 处理倒班出勤字典，字典的key是由工号和日期组成的元组，我的要求如下
-# 返回值是一个新的字典，字典的key是工号，值是这个工号这个月的倒班天数
+# 处理倒班出勤字典，字典的key是由工号和日期组成的元组
 def deal_shift(shift_day_dict):
 
     # 创建一个字典来存储每个员工的倒班天数

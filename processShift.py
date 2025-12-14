@@ -85,7 +85,7 @@ def process_shift_attendance(shift_df, punch_dict, index_map):
 
 
 
-def process_overtime_and_guesthouse(punch_dict, org_dict, index_map, holiday_set, person_dept_dict):
+def process_overtime_and_guesthouse(punch_dict, punch_place_dict, index_map, holiday_set, person_dept_dict):
     """
     针对所有有打卡记录的员工，计算加班时长、招待所员工出勤时长
     """
@@ -98,10 +98,7 @@ def process_overtime_and_guesthouse(punch_dict, org_dict, index_map, holiday_set
 
         earliest = punch_times[0]
         latest = punch_times[-1]
-        # org_name = org_dict.get(key, "")
         org_name = person_dept_dict.get(emp_id, "")
-
-
 
         if key not in index_map:
             index_map[key] = {}
@@ -126,13 +123,16 @@ def process_overtime_and_guesthouse(punch_dict, org_dict, index_map, holiday_set
                 punches_today = punch_dict.get((emp_id, date), [])
                 # 如果当天有打卡记录，计算时间间隔
                 if punches_today:
-                    # 排序打卡时间
-                    sorted_punches = sorted(punches_today)
-                    # 获取最早和最晚打卡时间
-                    earliest_punch = sorted_punches[0]
-                    latest_punch = sorted_punches[-1]
-                    # 计算时间间隔（单位：小时）
-                    index_map[key]["加班时长"] = math.ceil((latest_punch - earliest_punch).total_seconds() / 3600)
+                    # 排序打卡时间 
+                    sorted_punches = sorted([t for t, p in zip(punch_times, punch_place_dict[key]) if p not in ["河口1号门入口右2_门_1_读卡器_1_考勤点", "河口-九号门出口_门_1_读卡器_1_考勤点"]])
+
+                    # 确保sorted_punches不为空
+                    if sorted_punches:
+                        # 获取最早和最晚打卡时间
+                        earliest_punch = sorted_punches[0]
+                        latest_punch = sorted_punches[-1]
+                        # 计算时间间隔（单位：小时）
+                        index_map[key]["加班时长"] = math.ceil((latest_punch - earliest_punch).total_seconds() / 3600)
             else :
                 standard_end = datetime.combine(latest.date(), datetime.strptime("18:30", "%H:%M").time())
                 overtime = latest - standard_end
@@ -149,19 +149,24 @@ def fill_shift_attendance(index_map, shift_df, record_df, holiday_set, person_de
 
     # Step 1: 构建打卡字典和组织名称字典
     punch_dict = defaultdict(list)
-    org_dict = {}
+    punch_place_dict = defaultdict(list)
+    # org_dict = {}
     print("开始构建打卡字典")
     for _, row in record_df.iterrows():
         emp_id = re.sub(r'\s+', '', str(row["工号"]))  # 使用正则表达式去除所有空白字符
         punch_time = pd.to_datetime(row["考勤时间"], errors="coerce")
-        org_name = str(row.get("所属组织", "")).strip()
+        # org_name = str(row.get("所属组织", "")).strip()
+        # 获取打卡地点列
+        punch_place = str(row.get("考勤点名称", "")).strip()
 
         if pd.notna(punch_time):
             key = (emp_id, punch_time.date())
             punch_dict[key].append(punch_time)
+            punch_place_dict[key].append(punch_place)
 
-            if key not in org_dict:
-                org_dict[key] = org_name
+
+            # if key not in org_dict:
+            #     org_dict[key] = org_name
     print("打卡字典构建完成")
 
     # Step 2: 处理倒班员工的出勤判断
@@ -169,7 +174,7 @@ def fill_shift_attendance(index_map, shift_df, record_df, holiday_set, person_de
     print("倒班员工出勤已经完成")
 
     # Step 3: 针对所有员工统计加班/出勤
-    process_overtime_and_guesthouse(punch_dict, org_dict, index_map, holiday_set, person_dept_dict)
+    process_overtime_and_guesthouse(punch_dict, punch_place_dict, index_map, holiday_set, person_dept_dict)
     print("加班已经完成")
 
     return shift_day_dict
