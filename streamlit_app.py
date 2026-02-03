@@ -78,38 +78,45 @@ def save_excel_with_highlight(df, file_path):
     writer.close()
 
 # === 拆分原始打卡记录 ===
+# def split_attendance_records(input_file, output_dir):
+#     """
+#     按二级组织拆分考勤记录文件
+#     :param input_file: 输入的考勤记录文件（CSV或Excel）
+#     :param output_dir: 拆分后文件的存储目录
+#     :return: 拆分后的文件列表
+#     """
+#     # 读取文件
+#     if input_file.name.endswith('.csv'):
+#         df = pd.read_csv(input_file, encoding='gbk')
+#     else:
+#         df = pd.read_excel(input_file)
+#     
+#     # 确保输出目录存在
+#     if not os.path.exists(output_dir):
+#         os.makedirs(output_dir)
+#     
+#     # 从所属组织列中提取二级组织
+#     df['二级组织'] = df['所属组织'].str.split('/').str[1]
+#     
+#     # 按二级组织分组并保存文件
+#     split_files = []
+#     grouped = df.groupby('二级组织')
+#     
+#     for org_name, group in grouped:
+#         # 移除临时添加的二级组织列
+#         group = group.drop(columns=['二级组织'])
+#         output_file_path = os.path.join(output_dir, f'{org_name}_考勤记录.csv')
+#         group.to_csv(output_file_path, index=False, encoding='utf-8-sig')
+#         split_files.append(output_file_path)
+#     
+#     return split_files
+
 def split_attendance_records(input_file, output_dir):
     """
-    按二级组织拆分考勤记录文件
-    :param input_file: 输入的考勤记录文件（CSV或Excel）
-    :param output_dir: 拆分后文件的存储目录
-    :return: 拆分后的文件列表
+    拆分原始打卡记录功能已停用
+    :return: 空列表
     """
-    # 读取文件
-    if input_file.name.endswith('.csv'):
-        df = pd.read_csv(input_file, encoding='gbk')
-    else:
-        df = pd.read_excel(input_file)
-    
-    # 确保输出目录存在
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    
-    # 从所属组织列中提取二级组织
-    df['二级组织'] = df['所属组织'].str.split('/').str[1]
-    
-    # 按二级组织分组并保存文件
-    split_files = []
-    grouped = df.groupby('二级组织')
-    
-    for org_name, group in grouped:
-        # 移除临时添加的二级组织列
-        group = group.drop(columns=['二级组织'])
-        output_file_path = os.path.join(output_dir, f'{org_name}_考勤记录.csv')
-        group.to_csv(output_file_path, index=False, encoding='utf-8-sig')
-        split_files.append(output_file_path)
-    
-    return split_files
+    return []
 
 # === 创建ZIP文件 ===
 def create_zip_file(zip_filename, summary_file, detail_file, dept_summary_files, dept_detail_files, split_files=[]):
@@ -363,15 +370,6 @@ if uploaded_files:
                 for dept_name, file_path in st.session_state.dept_detail_files:
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                
-                # 清理拆分的原始打卡记录文件
-                for file_path in st.session_state.get('split_files', []):
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                
-                # 清理原始打卡记录目录
-                if os.path.exists("原始打卡记录"):
-                    shutil.rmtree("原始打卡记录")
                 
                 # 清理汇总表和明细表
                 if os.path.exists("汇总表.xlsx"):

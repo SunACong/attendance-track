@@ -106,6 +106,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                 "加班时长": 0, 
                 "节假日打卡天数": 0,
                 "旷工/请假天数": 0,
+                "登记倒班天数": 0,
             }
 
         stat = summary_map[emp_id]
@@ -121,7 +122,7 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
 
         # 获取员工倒班天数，如果工号不在emp_shift_days中，则默认为0
         total_shift_days = emp_shift_days.get(emp_id, 0)
-        
+        stat["登记倒班天数"] = total_shift_days
 
         # 如果考勤日期是节假日且没有OA请假记录，则跳过当前记录
         if attend_date in holiday_set:
@@ -173,8 +174,6 @@ def summarize_attendance(contact_attendance_list, holiday_set, shift_day_dict):
                     stat["缺勤"] += 1
                 record["是否异常"] = "是"
         stat["加班时长"] += record.get("加班时长", 0)
-        if emp_id == "11990062":
-                print(f"工号11990062 - {attend_date}: {stat}")
     return list(summary_map.values())
 
 # 处理倒班出勤字典，字典的key是由工号和日期组成的元组
