@@ -119,12 +119,10 @@ def process_overtime_and_guesthouse(punch_dict, punch_place_dict, index_map, hol
                     index_map[key]["是否异常"] = "是"
         else:
             if date in holiday_set:
-                # 获取当天所有打卡记录
                 punches_today = punch_dict.get((emp_id, date), [])
-                # 如果当天有打卡记录，计算时间间隔
                 if punches_today:
-                    # 排序打卡时间 
-                    sorted_punches = sorted([t for t, p in zip(punch_times, punch_place_dict[key]) if p not in ["河口1号门入口右2_门_1_读卡器_1_考勤点", "河口-九号门出口_门_1_读卡器_1_考勤点"]])
+                    punches_with_places = list(zip(punch_times, punch_place_dict[key]))
+                    sorted_punches = sorted([t for t, p in punches_with_places if p not in ["河口1号门入口右2_门_1_读卡器_1_考勤点", "河口-九号门出口_门_1_读卡器_1_考勤点"]])
 
                     # 确保sorted_punches不为空
                     if sorted_punches:
